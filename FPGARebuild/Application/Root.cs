@@ -3,7 +3,7 @@
 namespace FPGARebuild.Root {
 	class Root {
 		static void Main(string[] args) {
-			Server.Server server = new Server.Server(auto : true);
+			Server.Server server = new Server.Server(auto : false);
 			Thread packet_thread = new Thread(new ThreadStart(server.Run));
 			packet_thread.Start();
 
@@ -15,8 +15,8 @@ namespace FPGARebuild.Root {
 			// light_show_thread.Start();
 			
 			for(int i = 0; i < 5; i++) {
-				// board.TestFunction("sine");
-				// board.Delay(5000);
+				board.TestFunction("sine");
+				board.Delay(5000);
 				board.TestFunction("step");
 				board.Delay(5000);
 			}

@@ -37,12 +37,19 @@ namespace FPGARebuild.Board {
 		#region Constants
 		/**
 		 * Board-defined constants, as listed in the Hover registry files (board build V8)
+		 * 
+		 * These constants may not be correct
+		 * 'SRAM_LEN'			18432
+		 * 'SRAM_PAGE_LEN'		9216
+		 * 'SRAM_DELAY_LEN'		1024
+		 * 'SRAM_BLOCK0_LEN'	16384
+		 * 'SRAM_BLOCK1_LEN'	2048
+		 * 'SRAM_WRITE_PKT_LEN'	256
 		 */
 		public const int fifo_counter = 3;
 		public const int lvds_sd = 3;
 		public const int lvds_phase = 180;
 		public const int sram_delay_length = 1024;
-		// [('SRAM_LEN', 18432), ('SRAM_PAGE_LEN', 9216), ('SRAM_DELAY_LEN', 1024), ('SRAM_BLOCK0_LEN', 16384), ('SRAM_BLOCK1_LEN', 2048), ('SRAM_WRITE_PKT_LEN', 256)]
 
 		/**
 		 * Constants found in dac.py
@@ -89,6 +96,28 @@ namespace FPGARebuild.Board {
 
 		#region Utilities
 		/**
+		 * The ECL output is not syncing to the DAC for some reason - this may be a possible way to calibrate ECL / DAC output
+		 * 
+		 * ghz_fpga_server.py : dac_reset_phasor
+		 * 
+		 * @setting(1120, 'DAC Reset Phasor', returns='b: phase detector output')
+		 * def dac_reset_phasor(self, c):
+		 * fp.close
+		 * """Resets the clock phasor. (DAC only)"""
+		 * dev = self.selectedDAC(c)
+		 * pkts = [
+		 *		[152, 0, 127, 0],  # set I to 0 deg
+         *		[152, 34, 254, 0], # set Q to 0 deg
+		 *		[112, 65],         # set enable bit high
+		 *		[112, 193],        # set reset high
+		 *		[112, 65],         # set reset low
+		 *		[112, 1],          # set enable low
+		 *		[113, I2C_RB]]     # read phase detector
+		 * r = yield dev.runI2C(pkts)
+		 * returnValue((r[0] & 1) > 0)
+		 */
+
+		/**
 		 * Initializes the 1GHz PLL, the DAC, and the LVDS SD
 		 */
 		public void Initialize(bool full) {
@@ -124,32 +153,14 @@ namespace FPGARebuild.Board {
 			};
 			// activate 1GHz oscillating crystal
 			packets.AddRange(Data.SerialData.LoadSerialData(0x01, new int[] { 0x1FC093, 0x1FC092, 0x100004, 0x000C11 }, readback: 0x00));
+
 			// run test function
 			packets.Add(new Data.RunSRAM(0x00, 0x00, continuous: false, sram_offset: 0, sync: 0xF9));
+			
 			// reset 1GHz PLL LED
 			packets[0].data[46] = 0x80;
 			this.server.SendAll(this.mac_address, packets.Select(x => x.data).ToArray());
 		}
-
-		/**
-		 * @setting(1120, 'DAC Reset Phasor', returns='b: phase detector output')
-		 * def dac_reset_phasor(self, c):
-		 * fp = open("Desktop\\o.txt")
-		 * fp.write("hiiiiiiiiii")
-		 * fp.close
-		 * """Resets the clock phasor. (DAC only)"""
-		 * dev = self.selectedDAC(c)
-		 * pkts = [
-		 *		[152, 0, 127, 0],  # set I to 0 deg
-         *		[152, 34, 254, 0], # set Q to 0 deg
-		 *		[112, 65],         # set enable bit high
-		 *		[112, 193],        # set reset high
-		 *		[112, 65],         # set reset low
-		 *		[112, 1],          # set enable low
-		 *		[113, I2C_RB]]     # read phase detector
-		 * r = yield dev.runI2C(pkts)
-		 * returnValue((r[0] & 1) > 0)
-		 */
 
 		/**
 		 * Initializes the digital-analog converters
@@ -162,7 +173,7 @@ namespace FPGARebuild.Board {
 		/**
 		 * Sets the LVDS
 		 * 
-		 * dac.py : def setLVDS(self, cmd, sd, optimizeSD)
+		 * dac.py : setLVDS
 		 */
 		public bool LVDSReset(DAC dac) {
 			bool success = true;
@@ -274,9 +285,11 @@ namespace FPGARebuild.Board {
 		}
 
 		/**
-		 * Runs the BIST function (built-in self test) (not yet implemented)
+		 * Runs the BIST function (built-in self test)
 		 * 
-		 * dac.py : runBIST(self, cmd, shift, dataIn)
+		 * Not completely implemented as of 09.06.2013
+		 * 
+		 * dac.py : runBIST
 		 */
 		public void RunBIST(DAC dac) {
 			WaveForm.ZeroWave wave = new WaveForm.ZeroWave();

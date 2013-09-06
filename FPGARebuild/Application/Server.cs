@@ -10,6 +10,14 @@ using PcapDotNet.Packets.Ethernet;
 
 namespace FPGARebuild.Server {
 	class Server {
+		#region Constants
+		/**
+		 * Refers to the key selected during Server.Select() for the ethernet out port;
+		 *		set this constant, then invoke the server via Server(auto : true) to skip port selection
+		 */
+		public const int ethernet_interface = 1;
+		#endregion
+
 		#region Instance Variables
 		IList<LivePacketDevice> _devices;
 		IList<LivePacketDevice> devices {
@@ -285,7 +293,7 @@ namespace FPGARebuild.Server {
 					key = Math.Max(0, Math.Min(key, devices.Count - 1));
 				}
 			} else {
-				key = 1;
+				key = Server.ethernet_interface;
 			}
 			this.Info(key, devices[key]);
 			this.active = devices[key];
